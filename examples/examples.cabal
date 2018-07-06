@@ -35,3 +35,10 @@ executable vectorShow
                        hmatrix-gsl
   default-language:    Haskell2010
 
+executable rootFinding
+  main-is:             rootFinding.hs
+  build-depends:       base >=4.10 && <4.11,
+                       hmatrix,
+                       hmatrix-sundials
+  default-language:    Haskell2010
+
