@@ -3,7 +3,7 @@
 {-# LANGUAGE NegativeLiterals #-}
 
 import           Numeric.Sundials.CVode.ODE
-import           Numeric.Sundials.ODEOpts (ODEOpts(..), SundialsDiagnostics)
+import           Numeric.Sundials.ODEOpts (ODEOpts(..))
 import           Numeric.LinearAlgebra
 
 
@@ -28,9 +28,8 @@ rootFn _ v = case xs of
 ts :: [Double]
 ts = take 12 $ map (* 10.0) (0.4 : ts)
 
--- foo :: Either (Matrix Double, Int)
---               (Matrix Double, SundialsDiagnostics)
-foo = odeSolveVWith'' opts BDF (ScXX' 1.0 1.0e-4 1.0 1.0 (vector [1.0e-8, 1.0e-14, 1.0e-6]))
+solve :: SolverResult Matrix Vector Int Double
+solve = odeSolveRootVWith' opts BDF (ScXX' 1.0 1.0e-4 1.0 1.0 (vector [1.0e-8, 1.0e-14, 1.0e-6]))
                       Nothing roberts (vector [1.0, 0.0, 0.0])
                       2 rootFn
                       (vector ts)
@@ -44,5 +43,5 @@ foo = odeSolveVWith'' opts BDF (ScXX' 1.0 1.0e-4 1.0 1.0 (vector [1.0e-8, 1.0e-1
                    }
 
 main :: IO ()
-main = putStrLn $ show foo
+main = putStrLn $ show solve
 
