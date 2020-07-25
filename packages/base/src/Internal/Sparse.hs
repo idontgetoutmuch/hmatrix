@@ -29,9 +29,6 @@ import System.IO.Unsafe(unsafePerformIO)
 import Foreign(Ptr)
 import Text.Printf(printf)
 
-infixl 0 ~!~
-(~!~) :: Applicative f => Bool -> [Char] -> f ()
-c ~!~ msg = when c (error msg)
 
 type AssocMatrix = [(IndexOf Matrix, Double)]
 
@@ -78,7 +75,6 @@ impureCSR
     -> r
 impureCSR f = f next begin done
   where
-    (?) = flip
     sfi = succ . fi
     begin = do
       mv <- M.unsafeNew 64
@@ -87,7 +83,7 @@ impureCSR f = f next begin done
       return (mv, mr, mc, 0, 0, 0, -1)
 
     next (!mv, !mr, !mc, !idxVC, !idxR, !maxC, !curRow) ((r,c),d) = do
-      r < curRow ~!~ printf "impureCSR: row %i specified after %i" r curRow
+      when (r < curRow) $ error (printf "impureCSR: row %i specified after %i" r curRow)
 
       let lenVC = M.length mv
           lenR  = M.length mr
@@ -110,9 +106,8 @@ impureCSR f = f next begin done
       M.unsafeWrite mc' idxVC (sfi c)
       M.unsafeWrite mv' idxVC d
 
-      idxR' <- foldM ? idxR ? [1 .. (r-curRow)] $ \idxR' _ -> do
-        M.unsafeWrite mr' idxR' (sfi idxVC)
-        return $! idxR' + 1
+      idxR' <- foldM (\idxR' _ -> M.unsafeWrite mr' idxR' (sfi idxVC) >> return (idxR' + 1))
+                     idxR [1 .. (r-curRow)]
 
       return (mv', mr', mc', idxVC + 1, idxR', maxC', r)
 
@@ -203,13 +198,13 @@ type SMxV = V (IV (IV (V (V (IO CInt)))))
 
 gmXv :: GMatrix -> Vector Double -> Vector Double
 gmXv SparseR { gmCSR = CSR{..}, .. } v = unsafePerformIO $ do
-    dim v /= nCols ~!~ printf "gmXv (CSR): incorrect sizes: (%d,%d) x %d" nRows nCols (dim v)
+    when (dim v /= nCols) $ error (printf "gmXv (CSR): incorrect sizes: (%d,%d) x %d" nRows nCols (dim v))
     r <- createVector nRows
     (csrVals # csrCols # csrRows # v #! r) c_smXv #|"CSRXv"
     return r
 
 gmXv SparseC { gmCSC = CSC{..}, .. } v = unsafePerformIO $ do
-    dim v /= nCols ~!~ printf "gmXv (CSC): incorrect sizes: (%d,%d) x %d" nRows nCols (dim v)
+    when (dim v /= nCols) $ error (printf "gmXv (CSC): incorrect sizes: (%d,%d) x %d" nRows nCols (dim v))
     r <- createVector nRows
     (cscVals # cscRows # cscCols # v #! r) c_smTXv #|"CSCXv"
     return r
